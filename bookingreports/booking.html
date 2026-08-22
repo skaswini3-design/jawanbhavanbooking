@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jawan Bhavan Booking System</title>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; font-family:Arial,sans-serif; }
+
+body { background:#f2f4f8; color:#1b2437; padding:20px; }
+
+/* ── HEADER ── */
+.header {
+  background:linear-gradient(to right,#ffffff,#f7f4ea);
+  border:1px solid #c99a2e;
+  border-radius:12px;
+  padding:20px;
+  margin-bottom:20px;
+  box-shadow:0 2px 10px rgba(20,30,60,0.06);
+}
+.header-top {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:20px;
+}
+.logo-section { display:flex; align-items:center; gap:15px; }
+.logo {
+  width:70px; height:70px; border-radius:50%;
+  background:#c99a2e;
+  display:flex; justify-content:center; align-items:center;
+  font-size:28px; color:#fff;
+}
+.title h1 { font-size:34px; color:#1b2437; }
+.title p   { color:#5a6b8c; margin-top:5px; }
+
+/* ── ROOM RATE CARDS ── */
+.cards {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:15px;
+  margin-bottom:20px;
+}
+.card {
+  background:#fff;
+  border:1px solid #dfe4ee;
+  border-radius:10px;
+  padding:18px;
+  box-shadow:0 2px 6px rgba(20,30,60,0.05);
+}
+.card h3 { font-size:15px; color:#5a6b8c; margin-bottom:10px; }
+.card h1 { color:#1d8f52; font-size:32px; }
+.card p  { margin-top:8px; color:#8593ad; }
+
+/* ── CONTROLS ── */
+.top-controls {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  flex-wrap:wrap;
+  gap:15px;
+  margin-bottom:20px;
+}
+.btn-group { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+button {
+  border:none; padding:12px 18px;
+  border-radius:8px; cursor:pointer;
+  color:white; font-weight:bold;
+}
+.clear-btn  { background:#c0392b; }
+.export-btn { background:#198754; }
+.print-btn  { background:#3a4a6b; }
+
+#excelFile {
+  background:#fff;
+  border:1px solid #dfe4ee;
+  border-radius:8px;
+  padding:8px;
+  color:#1b2437;
+}
+
+#uploadInfo {
+  color:#1d8f52;
+  font-size:13px;
+  line-height:1.7;
+  min-width:220px;
+}
+
+.search-box input {
+  padding:12px 15px; border:1px solid #dfe4ee;
+  border-radius:8px; width:300px;
+  background:#fff; color:#1b2437;
+  outline:none;
+}
+.search-box input::placeholder { color:#9aa7c0; }
+
+/* ── FILTER ── */
+.filter-section {
+  margin-bottom:20px;
+  display:flex;
+  align-items:center;
+  gap:15px;
+  flex-wrap:wrap;
+}
+.filter-section label { font-size:13px; color:#5a6b8c; }
+.filter-section select {
+  background:#fff; color:#1b2437;
+  border:1px solid #dfe4ee;
+  padding:12px 16px; border-radius:8px;
+  outline:none; cursor:pointer;
+}
+.col-count { color:#8593ad; font-size:13px; }
+
+/* ── TABLE ── */
+.table-container {
+  overflow:auto;
+  border-radius:10px;
+  border:1px solid #dfe4ee;
+  max-height:70vh;
+  background:#fff;
+}
+table { width:100%; border-collapse:collapse; min-width:1400px; }
+
+table th {
+  background:#f7f4ea; color:#1b2437;
+  padding:8px 10px; font-size:12.5px;
+  text-align:left; border-bottom:2px solid #c99a2e;
+  white-space:nowrap; line-height:1.2;
+  position:sticky; top:0; z-index:1;
+}
+table td {
+  padding:6px 10px; border-bottom:1px solid #eef1f7;
+  font-size:13px; line-height:1.3;
+  min-width:90px; max-width:400px;
+  white-space:normal; overflow-wrap:break-word;
+  vertical-align:top;
+  color:#1b2437;
+}
+table tr:nth-child(even) { background:#f8fafc; }
+table tr:hover { background:#eef4ff; }
+
+/* ── BADGE ── */
+.tag {
+  padding:5px 10px; border-radius:20px;
+  font-size:12px; font-weight:bold;
+  white-space:nowrap; display:inline-block;
+}
+.serving { background:#1d6f42; color:#fff; }
+.retired { background:#8a6416; color:#fff; }
+
+/* ── FOOTER ── */
+.footer-stats {
+  margin-top:20px;
+  background:#fff;
+  border:1px solid #dfe4ee;
+  border-radius:10px;
+  display:flex;
+  gap:15px;
+  padding:20px;
+  align-items:center;
+  flex-wrap:wrap;
+  box-shadow:0 2px 6px rgba(20,30,60,0.05);
+}
+.footer-stats div { text-align:center; min-width:150px; }
+.footer-stats h3  { color:#b8860b; margin-top:5px; }
+.footer-stats p   { color:#8593ad; font-size:13px; }
+
+.no-rows {
+  text-align:center; color:#8593ad;
+  padding:40px; font-size:14px;
+}
+
+/* Guest Details cell: keep each guest block on one line, scroll
+   sideways instead of wrapping onto many lines and blowing up row height */
+.guest-cell {
+  white-space:nowrap;
+  overflow-x:auto;
+  max-width:520px;
+  padding-bottom:2px;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="logo-section">
+      <div class="logo"><i class="fa-solid fa-star"></i></div>
+      <div class="title">
+        <p>DEPARTMENT OF SAINIK WELFARE</p>
+        <h1>Jawan Bhavan, Puducherry</h1>
+        <p>Room Booking &amp; Payment Details</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ROOM RATE CARDS -->
+<div class="cards">
+  <div class="card"><h3>SUITE ROOM</h3><h1>Rs. 900 / Day</h1><p>Serving Personnel</p></div>
+  <div class="card"><h3>SUITE ROOM</h3><h1>Rs. 600 / Day</h1><p>Retired Personnel</p></div>
+  <div class="card"><h3>FAMILY ROOM</h3><h1>Rs. 700 / Day</h1><p>Serving Personnel</p></div>
+  <div class="card"><h3>FAMILY ROOM</h3><h1>Rs. 500 / Day</h1><p>Retired Personnel</p></div>
+</div>
+
+<!-- CONTROLS -->
+<div class="top-controls">
+  <div class="btn-group">
+    <input type="file" id="excelFile" accept=".xlsx,.xls,.xlsm,.csv">
+    <button class="clear-btn"  onclick="clearTable()">Clear All</button>
+    <button class="export-btn" onclick="exportExcel()">Export Excel</button>
+    <button class="print-btn"  onclick="window.print()">Print</button>
+  </div>
+  <div id="uploadInfo">Last Upload : No file uploaded</div>
+  <div class="search-box">
+    <input type="text" id="searchInput"
+           placeholder="Search across all columns…"
+           oninput="applyFilters()">
+  </div>
+</div>
+
+<!-- FILTER -->
+<div class="filter-section">
+  <label>Filter by Service Status:</label>
+  <select id="categoryFilter" onchange="applyFilters()">
+    <option value="">All</option>
+    <option value="Serving">Serving</option>
+    <option value="Retired">Retired</option>
+  </select>
+
+  <label style="margin-left:10px;">Check-In Month:</label>
+  <select id="monthFilter" onchange="applyFilters()">
+    <option value="">All Months</option>
+    <option value="1">January</option>   <option value="2">February</option>
+    <option value="3">March</option>     <option value="4">April</option>
+    <option value="5">May</option>       <option value="6">June</option>
+    <option value="7">July</option>      <option value="8">August</option>
+    <option value="9">September</option> <option value="10">October</option>
+    <option value="11">November</option> <option value="12">December</option>
+  </select>
+
+  <label style="margin-left:10px;">Year:</label>
+  <select id="yearFilter" onchange="applyFilters()">
+    <option value="">All Years</option>
+    <option value="2022">2022</option>
+    <option value="2023">2023</option>
+    <option value="2024">2024</option>
+    <option value="2025">2025</option>
+    <option value="2026">2026</option>
+  </select>
+
+  <span class="col-count" id="colCount"></span>
+</div>
+
+<!-- TABLE -->
+<div class="table-container">
+  <table id="dataTable">
+    <thead><tr id="tableHeadRow"></tr></thead>
+    <tbody id="tableBody">
+      <tr><td class="no-rows">Upload an Excel or CSV file to load data.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- FOOTER — row count only (revenue removed) -->
+<div class="footer-stats">
+  <div style="display:none">
+    <p>Rows</p>
+    <h3 id="footerRows">0</h3>
+  </div>
+</div>
+
+<script>
+
+// ── STATE ─────────────────────────────────────────────────────
+let excelData    = [];  // full dataset from file
+let filteredData = [];  // currently shown after filters
+let allColumns   = [];  // ordered column headers
+
+// ── EXACT COLUMN NAMES FROM YOUR EXCEL ───────────────────────
+const COL = {
+  serviceStatus: "Service Status",    // "Serving" / "Retired"
+  rankCategory:  "Rank Category",
+  serviceNo:     "Service No",
+  checkIn:       "Check-In",
+  checkOut:      "Check-Out",
+  roomAllotment: "Actual Room Allotment",
+  guestDetails:  "Guest Details",
+  totalAmount:   "Total Amount",
+  upiTransId:    "UPI/Trans. ID",
+};
+
+// ── COLUMNS THAT ARE REFERENCE NUMBERS, NOT ARITHMETIC VALUES ──
+// Any of these columns must always render as plain digit text, never
+// scientific notation, regardless of the exact header spelling used
+// in a given export (some sheets use "ID Card No:", others "ID Card
+// No", etc). Matching is done case-insensitively against a trimmed
+// header so small header variations still get the fix.
+const ID_TEXT_COLUMNS = [
+  "service no",
+  "id no",
+  "id card no",
+  "id card no:",
+  "upi/trans. id",
+  "advance payment upi/trans. id",
+  "final payment upi/trans.id",
+];
+
+function isIdTextColumn(col) {
+  return ID_TEXT_COLUMNS.includes(String(col).trim().toLowerCase());
+}
+
+// ── PRECISION-LOSS DETECTION (numeric cells) ───────────────────
+// JS (and Excel itself) store numbers as 64-bit floats, which can only
+// guarantee exact integers up to 2^53-1 (Number.MAX_SAFE_INTEGER, ~15-16
+// digits). If a reference number longer than that was ever entered into
+// Excel as a NUMBER (not Text), Excel already rounded it before saving
+// the file — the true digits are gone before this app ever reads it, and
+// no code can reconstruct them. This flags that case instead of quietly
+// displaying a rounded value as if it were exact.
+function isImpreciseNumber(raw) {
+  return typeof raw === "number" && Number.isInteger(raw) && !Number.isSafeInteger(raw);
+}
+
+// ── EXPAND SCIENTIFIC NOTATION IN TEXT WITHOUT GOING THROUGH FLOAT ──
+// A CSV export can store a long reference number as plain text that
+// still looks like "3.19343434343E+12". If we ran that through
+// Number()/parseFloat() we'd round it to a 64-bit float and could lose
+// digits. Since every digit is already spelled out in the mantissa,
+// we can instead shift the decimal point using plain string math and
+// recover the exact original digit sequence every time.
+function expandSciNotation(str) {
+  const s = String(str).trim();
+  const m = s.match(/^([+-]?)(\d+)(?:\.(\d+))?[eE]([+-]?\d+)$/);
+  if (!m) return null;
+
+  const sign = m[1] === "-" ? "-" : "";
+  const intPart  = m[2];
+  const fracPart = m[3] || "";
+  const exp = parseInt(m[4], 10);
+
+  let digits = intPart + fracPart;
+  let pointPos = intPart.length + exp; // where the decimal point lands in `digits`
+
+  if (pointPos <= 0) {
+    digits = "0".repeat(-pointPos) + digits;
+    pointPos = 0;
+  } else if (pointPos >= digits.length) {
+    digits = digits + "0".repeat(pointPos - digits.length);
+  }
+
+  let result = pointPos === 0
+    ? "0." + digits
+    : (pointPos < digits.length ? digits.slice(0, pointPos) + "." + digits.slice(pointPos) : digits);
+
+  // Reference IDs are whole numbers — trim a trailing ".000..." if present.
+  if (result.includes(".")) {
+    result = result.replace(/\.?0+$/, "");
+  }
+  return sign + result;
+}
+
+// ── FORMAT: ID / reference-number text (prevent scientific notation) ──
+// Excel stores long numeric IDs like 3333333333333 as JS floats, and
+// naive conversion (String()/toFixed() past 1e21) can render them as
+// "3.33333E+12". This also covers CSV cells that already arrived as a
+// scientific-notation STRING (e.g. from a prior Excel export), by
+// expanding the notation back to plain digits via expandSciNotation.
+function plainIdString(value) {
+  if (value === null || value === undefined) return "";
+
+  // Case 1: a raw JS number (this is how ID cells arrive now that the
+  // file is read with raw:true instead of relying on Excel's own
+  // formatted display text). Number.prototype.toFixed(0) always yields
+  // the exact plain-digit decimal string for integers under 1e21 — no
+  // scientific notation, and no dependency on the cell's display format
+  // (which is what previously caused wrong/truncated values like
+  // "6.19822E+11" being read as the rounded display text instead of the
+  // real stored number).
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? value.toFixed(0) : String(value);
+  }
+
+  const asString = String(value).trim();
+  if (asString === "") return "";
+
+  // Case 2: value already looks like scientific notation (as text) —
+  // this happens with CSV cells that were already converted to
+  // scientific notation text by a previous Excel export. Expand it back
+  // to plain digits without any float rounding.
+  if (/^[+-]?\d+(\.\d+)?[eE][+-]?\d+$/.test(asString)) {
+    const expanded = expandSciNotation(asString);
+    if (expanded !== null) return expanded;
+  }
+
+  return asString;
+}
+
+// Back-compat alias — formatUpiId is still referenced by name in a
+// couple of places below.
+function formatUpiId(raw) { return plainIdString(raw); }
+
+// ── FORMAT: Room Code(s) ───────────────────────────────────────
+// A booking can allot more than one room (e.g. two guests, two rooms).
+// The JSON blob can carry multiple entries in its "data" object — every
+// one of them is a real room code and must be shown, not just the first.
+function extractRoomCode(raw) {
+  if (!raw) return "";
+  let s = String(raw).trim();
+
+  if (s.startsWith("{")) {
+    try {
+      const obj = JSON.parse(s);
+      if (obj && obj.data) {
+        const vals = Object.values(obj.data).filter(v => v !== "" && v !== null && v !== undefined);
+        const codes = vals
+          .map(v => String(v).split("~").pop().trim().toUpperCase().replace(/\s+/g, ""))
+          .filter(Boolean);
+        // De-duplicate while preserving order, in case the same room
+        // code appears twice in the source data.
+        const seen = new Set();
+        const unique = codes.filter(c => (seen.has(c) ? false : (seen.add(c), true)));
+        return unique.join(", ");
+      }
+    } catch (e) {}
+    return "";
+  }
+
+  if (s.includes("~")) s = s.split("~").pop();
+  return s.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+// ── FORMAT: Guest Details JSON → per-guest blocks ─────────────
+function formatGuestDetails(raw) {
+  if (!raw) return "";
+  const s = String(raw).trim();
+  if (!s.startsWith("{")) return escHtml(s);
+  try {
+    const obj = JSON.parse(s);
+    if (!obj || !obj.data || !obj.header) return escHtml(s);
+
+    // keys like "338025_1" → fieldId="338025", guestIdx="1"
+    const guests = {};
+    Object.keys(obj.data).forEach(key => {
+      const parts    = key.split("_");
+      const fieldId  = parts[0];
+      const guestIdx = parts[1] || "1";
+      const label    = obj.header[fieldId] || fieldId;
+      let val = obj.data[key];
+      if (typeof val === "string" && val.includes("~")) val = val.split("~").pop();
+      if (val === "" || val === null || val === undefined) return;
+      if (!guests[guestIdx]) guests[guestIdx] = {};
+      guests[guestIdx][label] = val;
+    });
+
+    const ORDER = ["Name", "Relationship", "Age", "Martial Status"];
+    return Object.keys(guests)
+      .sort((a, b) => Number(a) - Number(b))
+      .map((idx, i) => {
+        const g = guests[idx];
+        const ordered = [...ORDER, ...Object.keys(g).filter(k => !ORDER.includes(k))];
+        const details = ordered
+          .filter(k => g[k] !== undefined)
+          .map(k => `${k}: ${g[k]}`)
+          .join(", ");
+        return `<b>Guest ${i + 1}</b> [ ${escHtml(details)} ]`;
+      }).join("&nbsp;&nbsp;|&nbsp;&nbsp;");
+
+  } catch (e) { return escHtml(s); }
+}
+
+// ── FORMAT: Date ──────────────────────────────────────────────
+function formatDate(raw) {
+  if (raw === null || raw === undefined || raw === "") return "";
+  if (typeof raw === "number") {
+    const d = XLSX.SSF.parse_date_code(raw);
+    if (!d) return String(raw);
+    const dt = new Date(d.y, d.m - 1, d.d, d.H || 0, d.M || 0);
+    return dt.toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" })
+         + ((d.H || d.M) ? " " + dt.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", hour12:true }) : "");
+  }
+  const s = String(raw).trim();
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:[\sT](\d{1,2}):(\d{2}))?/);
+  if (m) {
+    const dt = new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0));
+    return dt.toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" })
+         + (m[4] ? " " + dt.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", hour12:true }) : "");
+  }
+  return s;
+}
+
+// ── PARSE DATE TO JS Date (for filtering) ─────────────────────
+function parseToDate(raw) {
+  if (raw === null || raw === undefined || raw === "") return null;
+  if (typeof raw === "number") {
+    const d = XLSX.SSF.parse_date_code(raw);
+    return d ? new Date(d.y, d.m - 1, d.d) : null;
+  }
+  const s = String(raw).trim().split(/[\sT]/)[0];
+  let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+  const dt = new Date(s);
+  return isNaN(dt) ? null : dt;
+}
+
+// ── HTML ESCAPE ────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── CELL RENDERER ─────────────────────────────────────────────
+function renderCell(col, row) {
+  const raw = row[col];
+
+  // Date columns
+  if (col === COL.checkIn || col === COL.checkOut || col === "Checkout") {
+    return escHtml(formatDate(raw ?? ""));
+  }
+
+  // Room code(s)
+  if (col === COL.roomAllotment) {
+    return escHtml(extractRoomCode(raw ?? ""));
+  }
+
+  // Guest details — force single-line horizontal layout, cell scrolls
+  // sideways instead of wrapping each field onto its own line.
+  if (col === COL.guestDetails) {
+    return `<div class="guest-cell">${formatGuestDetails(raw ?? "")}</div>`;
+  }
+
+  // Reference-number columns (Service No, ID Card No, UPI/Trans IDs,
+  // Advance/Final Payment UPI/Trans IDs) — always plain digit text,
+  // never scientific notation. Checked by header name so it applies
+  // no matter which of these columns are present in a given file.
+  if (isIdTextColumn(col)) {
+    const val = plainIdString(raw ?? "");
+    if (isImpreciseNumber(raw)) {
+      // Value is 17+ digits and arrived as a number — the source file
+      // already rounded it before we ever read it. Flag it visibly
+      // rather than silently showing a possibly-wrong value as exact.
+      return `<span style="color:#b8860b" title="This value is long enough that Excel may have rounded it when it was stored as a number. Format this column as Text in the source file to preserve every digit exactly.">${escHtml(val)} ⚠️</span>`;
+    }
+    return escHtml(val);
+  }
+
+  // Service Status — coloured badge
+  if (col === COL.serviceStatus) {
+    if (!raw) return "";
+    const val = String(raw).trim();
+    const cls = val.toLowerCase() === "serving" ? "serving" : "retired";
+    return `<span class="tag ${cls}">${escHtml(val)}</span>`;
+  }
+
+  if (raw === null || raw === undefined || raw === "") return "";
+  return escHtml(raw);
+}
+
+// ── BUILD COLUMN LIST ─────────────────────────────────────────
+function buildColumns(data) {
+  const seen = new Set();
+  allColumns = [];
+  data.forEach(row => {
+    Object.keys(row).forEach(k => {
+      if (!seen.has(k)) { seen.add(k); allColumns.push(k); }
+    });
+  });
+}
+
+function renderHeader() {
+  document.getElementById("tableHeadRow").innerHTML =
+    allColumns.map(c => `<th>${escHtml(c)}</th>`).join("");
+  document.getElementById("colCount").innerText =
+    allColumns.length ? `${allColumns.length} columns` : "";
+}
+
+// ── DISPLAY TABLE ─────────────────────────────────────────────
+function displayTable(data) {
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${allColumns.length || 1}" class="no-rows">No records match your filter.</td></tr>`;
+    return;
+  }
+
+  // Build rows — innerHTML concatenation can be slow for large datasets,
+  // so we collect strings then set once.
+  const rows = data.map(row => {
+    const cells = allColumns.map(col => `<td>${renderCell(col, row)}</td>`).join("");
+    return `<tr>${cells}</tr>`;
+  });
+  tbody.innerHTML = rows.join("");
+}
+
+// ── APPLY ALL FILTERS TOGETHER ────────────────────────────────
+// This is the single source of truth for filtering.
+// All three filters (search, category, date) are applied together
+// so they work in combination correctly.
+function applyFilters() {
+  const searchQ  = document.getElementById("searchInput").value.trim().toLowerCase();
+  const selCat   = document.getElementById("categoryFilter").value.trim();  // "Serving" / "Retired" / ""
+  const selMonth = document.getElementById("monthFilter").value;             // "1".."12" or ""
+  const selYear  = document.getElementById("yearFilter").value;              // "2024" or ""
+
+  filteredData = excelData.filter(row => {
+
+    // ── 1. Service Status filter ──────────────────────────────
+    // Your Excel column is exactly "Service Status" with values "Serving" or "Retired".
+    if (selCat !== "") {
+      const statusVal = String(row[COL.serviceStatus] || "").trim().toLowerCase();
+      if (statusVal !== selCat.toLowerCase()) return false;
+    }
+
+    // ── 2. Check-In Month / Year filter ──────────────────────
+    if (selMonth !== "" || selYear !== "") {
+      const dt = parseToDate(row[COL.checkIn]);
+      if (!dt) return false;
+      if (selMonth !== "" && String(dt.getMonth() + 1) !== selMonth) return false;
+      if (selYear  !== "" && String(dt.getFullYear())   !== selYear)  return false;
+    }
+
+    // ── 3. Search (across all columns) ───────────────────────
+    if (searchQ !== "") {
+      const rowText = allColumns
+        .map(col => String(row[col] ?? "").toLowerCase())
+        .join(" ");
+      if (!rowText.includes(searchQ)) return false;
+    }
+
+    return true;
+  });
+
+  displayTable(filteredData);
+  updateFooter(filteredData);
+}
+
+// ── FILE UPLOAD ────────────────────────────────────────────────
+document.getElementById("excelFile").addEventListener("change", function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const ext = file.name.split(".").pop().toLowerCase();
+
+  if (!["xlsx","xls","xlsm","csv"].includes(ext)) {
+    alert(`Unsupported file type ".${ext}". Use .xlsx, .xls or .csv`);
+    e.target.value = "";
+    return;
+  }
+
+  if (ext === "csv") {
+    const reader = new FileReader();
+    reader.onload = evt => {
+      const parsed = Papa.parse(evt.target.result,{
+    header:true,
+    dynamicTyping:false,
+    skipEmptyLines:true,
+    transformHeader:h=>h.trim()
+});
+        
+      onDataLoaded(parsed.data, file, "CSV");
+    };
+    reader.readAsText(file, "UTF-8");
+  } else {
+    const reader = new FileReader();
+    reader.onload = evt => {
+const wb = XLSX.read(evt.target.result, {
+    type: "array"
+});
+
+const ws = wb.Sheets[wb.SheetNames[0]];
+
+// raw:true returns each numeric cell's true stored value, not Excel's
+// formatted display text. This matters a lot for long reference numbers:
+// if a cell displays as "6.19822E+11" in Excel but is really
+// 619822040414 underneath, raw:false (via cellText/cellNF) was handing
+// us the rounded DISPLAY string instead of the real number — which is
+// exactly what produced wrong ID values before. With raw:true we get
+// 619822040414 itself, and plainIdString()/formatDate() below already
+// know how to turn a raw number into the correct plain text or date.
+const data = XLSX.utils.sheet_to_json(ws, {
+    raw: true,
+    defval: ""
+});
+      onDataLoaded(data, file, "Excel");
+    };
+    reader.readAsArrayBuffer(file);
+  }
+});
+
+function onDataLoaded(data, file, label) {
+  excelData    = data;
+  filteredData = [...data];
+
+  buildColumns(excelData);
+  renderHeader();
+  displayTable(filteredData);
+  updateFooter(filteredData);
+  updateUploadInfo(file, label);
+
+  // Reset all filters when a new file is loaded
+  document.getElementById("searchInput").value  = "";
+  document.getElementById("categoryFilter").value = "";
+  document.getElementById("monthFilter").value  = "";
+  document.getElementById("yearFilter").value   = "";
+}
+
+// ── FOOTER ────────────────────────────────────────────────────
+function updateFooter(data) {
+  document.getElementById("footerRows").innerText = data.length;
+}
+
+// ── CLEAR ─────────────────────────────────────────────────────
+function clearTable() {
+  excelData    = [];
+  filteredData = [];
+  allColumns   = [];
+  document.getElementById("tableHeadRow").innerHTML = "";
+  document.getElementById("tableBody").innerHTML    =
+    `<tr><td class="no-rows">Upload an Excel or CSV file to load data.</td></tr>`;
+  document.getElementById("colCount").innerText = "";
+  document.getElementById("searchInput").value  = "";
+  document.getElementById("categoryFilter").value = "";
+  document.getElementById("monthFilter").value  = "";
+  document.getElementById("yearFilter").value   = "";
+  document.getElementById("footerRows").innerText    = "0";
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+function exportExcel() {
+  if (!filteredData.length) { alert("No data to export."); return; }
+
+  // Export the same plain-text ID values shown on screen (not the raw
+  // numbers), so opening the exported file in Excel doesn't reintroduce
+  // scientific notation for these reference-number columns.
+  const exportRows = filteredData.map(row => {
+    const out = { ...row };
+    allColumns.forEach(col => {
+      if (isIdTextColumn(col) && out[col] !== undefined) {
+        out[col] = plainIdString(out[col]);
+      }
+      if (col === COL.roomAllotment && out[col] !== undefined) {
+        out[col] = extractRoomCode(out[col]);
+      }
+    });
+    return out;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportRows);
+  // Force ID/reference columns to Text format in the exported file so
+  // Excel doesn't re-render them as scientific notation when reopened.
+  const idColIndexes = allColumns
+    .map((c, i) => (isIdTextColumn(c) ? i : -1))
+    .filter(i => i !== -1);
+  const range = XLSX.utils.decode_range(ws["!ref"]);
+  idColIndexes.forEach(colIdx => {
+    for (let r = range.s.r; r <= range.e.r; r++) {
+      const cellRef = XLSX.utils.encode_cell({ r, c: colIdx });
+      const cell = ws[cellRef];
+      if (cell) cell.t = "s";
+    }
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Bookings");
+  XLSX.writeFile(wb, "Jawan_Bhavan_Bookings.xlsx");
+}
+
+// ── UPLOAD INFO ────────────────────────────────────────────────
+function updateUploadInfo(file, label) {
+  const now  = new Date();
+  const date = now.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" });
+  const time = now.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+  document.getElementById("uploadInfo").innerHTML =
+    `<b>Last Upload:</b><br>📄 ${escHtml(file.name)} (${label})<br>📅 ${date} &nbsp;🕒 ${time}`;
+}
+
+</script>
+</body>
+</html>

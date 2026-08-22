@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jawan Bhavan Rental Collection Statement</title>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family:'Poppins',sans-serif;
+  background:#eef2f7;
+  padding:25px;
+}
+.main-container { max-width:1900px; margin:auto; }
+
+/* ── HEADER ── */
+.header {
+  background:linear-gradient(135deg,#0f172a,#1e3a5f);
+  color:#fff;
+  padding:22px 28px;
+  border-radius:15px;
+  margin-bottom:18px;
+  box-shadow:0 5px 20px rgba(0,0,0,.2);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+}
+.header-left h2 { font-size:26px; font-weight:700; }
+.header-left p  { font-size:12px; opacity:.65; margin-top:3px; }
+
+.upload-info-box {
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:10px;
+  padding:10px 18px;
+  font-size:12px;
+  text-align:right;
+  line-height:1.7;
+  min-width:230px;
+}
+.upload-info-box strong { font-size:13px; display:block; }
+
+/* ── CONTROLS ── */
+.top-box {
+  background:#fff;
+  padding:16px 20px;
+  border-radius:15px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  justify-content:center;
+  align-items:center;
+  margin-bottom:18px;
+  box-shadow:0 4px 14px rgba(0,0,0,.08);
+}
+
+.file-label {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:11px 18px;
+  background:#f1f5f9;
+  border:2px dashed #94a3b8;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:600;
+  color:#334155;
+  transition:.2s;
+}
+.file-label:hover { border-color:#2563eb; color:#2563eb; background:#eff6ff; }
+#excelFile { display:none; }
+.file-name-lbl { font-size:11.5px; color:#64748b; font-style:italic; }
+
+input[type=text],
+input[type=date],
+select {
+  padding:10px 14px;
+  border-radius:10px;
+  border:1px solid #cbd5e1;
+  font-size:13px;
+  outline:none;
+  transition:.2s;
+  min-width:180px;
+}
+input[type=text]:focus,
+input[type=date]:focus,
+select:focus { border-color:#2563eb; box-shadow:0 0 0 3px #bfdbfe; }
+
+.date-range-group {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:10px;
+  padding:6px 10px;
+}
+.date-range-group label {
+  font-size:11.5px;
+  font-weight:700;
+  color:#64748b;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+.date-range-group input[type=date] { min-width:150px; }
+.date-range-group span.to-sep { color:#94a3b8; font-weight:700; font-size:12px; }
+
+button {
+  padding:10px 20px;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:700;
+  transition:.2s;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+button:hover { transform:translateY(-2px); opacity:.9; }
+.btn-blue  { background:#2563eb; color:#fff; }
+.btn-green { background:#16a34a; color:#fff; }
+.btn-red   { background:#dc2626; color:#fff; }
+
+/* ── SUMMARY STATS ── */
+.stats-row {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:14px;
+  margin-bottom:18px;
+}
+.stat-card {
+  background:#fff;
+  border-radius:12px;
+  padding:15px 18px;
+  border-left:5px solid;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+}
+.stat-card .s-lbl { font-size:11px; font-weight:700; text-transform:uppercase; color:#6b7280; letter-spacing:.5px; }
+.stat-card .s-val { font-size:27px; font-weight:800; margin-top:4px; }
+.sc-blue  { border-color:#3b82f6; } .sc-blue  .s-val { color:#1d4ed8; }
+.sc-green { border-color:#22c55e; } .sc-green .s-val { color:#15803d; }
+.sc-red   { border-color:#ef4444; } .sc-red   .s-val { color:#b91c1c; }
+.sc-amber { border-color:#f59e0b; } .sc-amber .s-val { color:#b45309; }
+
+/* ── NOTICE ── */
+.parse-note {
+  background:#fffbeb;
+  border:1px solid #fde68a;
+  color:#92400e;
+  border-radius:10px;
+  padding:12px 16px;
+  font-size:12.5px;
+  margin-bottom:16px;
+  display:none;
+  line-height:1.6;
+}
+
+/* ── ACCOUNT BOX ── */
+.account-box {
+  background:#fff;
+  border-radius:15px;
+  overflow:hidden;
+  box-shadow:0 5px 15px rgba(0,0,0,.08);
+}
+.account-header {
+  background:#0f172a;
+  color:#fff;
+  padding:20px 26px;
+}
+.account-header h3 { font-size:20px; margin-bottom:10px; }
+.account-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:8px;
+  font-size:13px;
+}
+.account-grid p { margin:3px 0; }
+
+/* ── TABLE ── */
+.table-container { overflow:auto; }
+
+.bank-table {
+  width:100%;
+  border-collapse:collapse;
+  min-width:1800px;
+}
+.bank-table thead { background:#1e293b; color:#fff; }
+.bank-table th {
+  padding:13px 10px;
+  border:1px solid #334155;
+  text-align:center;
+  font-size:13px;
+  cursor:pointer;
+  user-select:none;
+  white-space:nowrap;
+}
+.bank-table th:hover { background:#334155; }
+.bank-table td {
+  padding:12px 10px;
+  border:1px solid #e2e8f0;
+  text-align:center;
+  font-size:13px;
+}
+.bank-table tbody tr:nth-child(even) { background:#f8fafc; }
+.bank-table tbody tr:hover { background:#eff6ff; transition:.1s; }
+
+/* ── BADGES ── */
+.adv-badge {
+  background:#dcfce7; color:#166534;
+  padding:5px 12px; border-radius:20px;
+  font-size:11.5px; font-weight:700; white-space:nowrap;
+}
+.bal-badge {
+  background:#fee2e2; color:#991b1b;
+  padding:5px 12px; border-radius:20px;
+  font-size:11.5px; font-weight:700; white-space:nowrap;
+}
+.credit { color:#16a34a; font-weight:700; }
+.run-bal {
+  background:#dbeafe; color:#1d4ed8;
+  padding:5px 12px; border-radius:20px;
+  font-weight:700; display:inline-block;
+}
+.total-row {
+  background:#0f172a !important;
+  color:#fff; font-size:15px; font-weight:700;
+}
+
+/* ── TOAST ── */
+#toast {
+  position:fixed; bottom:22px; right:22px;
+  background:#1e293b; color:#fff;
+  padding:11px 20px; border-radius:10px;
+  font-size:13px; font-weight:600;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
+  display:none; z-index:9999;
+}
+
+@media(max-width:768px) {
+  body { padding:10px; }
+  .top-box { flex-direction:column; }
+  button, input[type=text], select { width:100%; }
+  .date-range-group { width:100%; justify-content:center; flex-wrap:wrap; }
+  .header { flex-direction:column; text-align:center; }
+  .upload-info-box { text-align:center; min-width:unset; }
+}
+</style>
+</head>
+
+<body>
+<div class="main-container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h2>🏨 Jawan Bhavan Rental Collection Statement</h2>
+      <p>Department of Sainik Welfare, Puducherry — Digital Payment Report</p>
+    </div>
+    <div class="upload-info-box" id="uploadInfoBox">
+      <strong>No file loaded</strong>
+      Upload Excel / CSV to begin
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="top-box">
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+      <label class="file-label" for="excelFile">📂 Upload Excel / CSV</label>
+      <input type="file" id="excelFile" accept=".xlsx,.xls,.csv">
+      <span class="file-name-lbl" id="fileNameLbl">No file selected</span>
+    </div>
+
+    <input type="text" id="searchInput" placeholder="🔍 Search all fields…" oninput="searchTable()">
+
+    <div class="date-range-group">
+      <label for="startDate">From</label>
+      <input type="date" id="startDate">
+      <span class="to-sep">→</span>
+      <label for="endDate">To</label>
+      <input type="date" id="endDate">
+    </div>
+
+    <button class="btn-blue"  onclick="filterDateRange()">⚡ Filter</button>
+    <button class="btn-green" onclick="showAll()">↺ Show All</button>
+    <button class="btn-red"   onclick="exportPDF()">📄 Export PDF</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row" id="statsRow" style="display:none">
+    <div class="stat-card sc-green">
+      <div class="s-lbl">Total Advance (₹)</div>
+      <div class="s-val" id="sTotalAdv">0</div>
+    </div>
+    <div class="stat-card sc-red">
+      <div class="s-lbl">Total Balance (₹)</div>
+      <div class="s-val" id="sTotalBal">0</div>
+    </div>
+    <div class="stat-card sc-amber">
+      <div class="s-lbl">Grand Total (₹)</div>
+      <div class="s-val" id="sGrand">0</div>
+    </div>
+  </div>
+
+  <!-- NOTICE -->
+  <div class="parse-note" id="parseNote"></div>
+
+  <!-- ACCOUNT -->
+  <div class="account-box">
+    <div class="account-header">
+      <h3>📊 Account Statement</h3>
+      <div class="account-grid">
+        <div>
+          <p><b>Account Name :</b> Jawan Bhavan</p>
+          <p><b>Account Type :</b> Current Account</p>
+        </div>
+        <div>
+          <p><b>Branch :</b> Puducherry</p>
+          <p><b>Managed by :</b> Dept. of Sainik Welfare</p>
+        </div>
+        <div>
+          <p><b>Status :</b> Active</p>
+          <p><b>Report :</b> Digital Payment Collection</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-container">
+      <table class="bank-table" id="paymentTable">
+        <thead>
+          <tr>
+            <th onclick="tableSort('slno')">Sl.No ↕</th>
+            <th onclick="tableSort('date')">Date ↕</th>
+            <th onclick="tableSort('appref')">Application Ref No ↕</th>
+            <th onclick="tableSort('serviceno')">Service No ↕</th>
+            <th onclick="tableSort('idcard')">ID Card No ↕</th>
+            <th onclick="tableSort('name')">Name ↕</th>
+            <th onclick="tableSort('type')">Transaction Type ↕</th>
+            <th onclick="tableSort('txn')">UPI / Trans. ID ↕</th>
+            <th onclick="tableSort('credit')">Credit (₹) ↕</th>
+            <th onclick="tableSort('balance')">Running Balance ↕</th>
+            <th onclick="tableSort('remarks')">Remarks ↕</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr>
+            <td colspan="11" style="padding:50px;color:#94a3b8;font-size:14px;">
+              📋 Upload an Excel or CSV file to load data
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+// ── STATE ─────────────────────────────────────────────────────
+let originalData       = [];
+let currentDisplayData = [];
+let sortField          = "";
+let sortOrder          = "asc";
+
+// ── NORMALIZED FIELD LOOKUP ─────────────────────────────────────
+function normKey(k) {
+  return String(k)
+    .replace(/\uFEFF/g, "")   // BOM
+    .replace(/\u00A0/g, " ")  // non-breaking space -> normal space
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/:$/, "");       // trailing colon, e.g. "ID Card No:"
+}
+
+function getField(row, candidates) {
+  for (const c of candidates) {
+    if (row[c] !== undefined && row[c] !== null && row[c] !== "") return row[c];
+  }
+  const wanted = candidates.map(normKey);
+  for (const realKey of Object.keys(row)) {
+    const nk = normKey(realKey);
+    if (wanted.includes(nk)) {
+      const v = row[realKey];
+      if (v !== undefined && v !== null && v !== "") return v;
+    }
+  }
+  return "";
+}
+
+// ── EXPAND SCIENTIFIC NOTATION IN TEXT WITHOUT GOING THROUGH FLOAT ──
+function expandSciNotation(str) {
+  const s = String(str).trim();
+  const m = s.match(/^([+-]?)(\d+)(?:\.(\d+))?[eE]([+-]?\d+)$/);
+  if (!m) return null;
+
+  const sign = m[1] === "-" ? "-" : "";
+  const intPart  = m[2];
+  const fracPart = m[3] || "";
+  const exp = parseInt(m[4], 10);
+
+  let digits = intPart + fracPart;
+  let pointPos = intPart.length + exp;
+
+  if (pointPos <= 0) {
+    digits = "0".repeat(-pointPos) + digits;
+    pointPos = 0;
+  } else if (pointPos >= digits.length) {
+    digits = digits + "0".repeat(pointPos - digits.length);
+  }
+
+  let result = pointPos === 0
+    ? "0." + digits
+    : (pointPos < digits.length ? digits.slice(0, pointPos) + "." + digits.slice(pointPos) : digits);
+
+  if (result.includes(".")) result = result.replace(/\.?0+$/, "");
+  return sign + result;
+}
+
+// ── PLAIN ID STRING (prevents scientific notation on long Excel IDs) ──
+function plainIdString(value) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? value.toFixed(0) : String(value);
+  }
+  const asString = String(value).trim();
+  if (asString === "") return "";
+  if (/^[+-]?\d+(\.\d+)?[eE][+-]?\d+$/.test(asString)) {
+    const expanded = expandSciNotation(asString);
+    if (expanded !== null) return expanded;
+  }
+  return asString;
+}
+
+// ── ROBUST AMOUNT PARSE ────────────────────────────────────────
+function parseAmount(raw) {
+  if (raw === null || raw === undefined || raw === "") return 0;
+  if (typeof raw === "number") return isNaN(raw) ? 0 : raw;
+  const cleaned = String(raw).replace(/[^\d.-]/g, "");
+  const v = parseFloat(cleaned);
+  return isNaN(v) ? 0 : v;
+}
+
+// ── FIELD READERS ──────────────────────────────────────────────
+function getAppRef(row) {
+  const v = getField(row, ["Application No", "application_no", "Application Reference No", "App No"]);
+  return String(v).trim() || "—";
+}
+
+function getName(row) {
+  const v = getField(row, ["Name", "name", "NAME"]);
+  return String(v).trim() || "—";
+}
+
+function getServiceNo(row) {
+  const v = getField(row, ["Service No", "service_no", "ServiceNo"]);
+  return plainIdString(v) || "—";
+}
+
+function getIdCardNo(row) {
+  const v = getField(row, ["ID Card No:", "ID Card No", "id_card_no", "IDCardNo"]);
+  return plainIdString(v) || "—";
+}
+
+function getAdvanceAmount(row) {
+  const raw = getField(row, [
+    "Advance Payment Amount", "Advance Payment", "advance_payment_amount",
+    "advance_payment", "Advance Paid", "advance_paid"
+  ]);
+  return parseAmount(raw);
+}
+
+function getBalanceAmount(row) {
+  const raw = getField(row, [
+    "Balance Amount", "balance_amount", "Balance Paid", "balance_paid"
+  ]);
+  return parseAmount(raw);
+}
+
+function getAdvanceTxnId(row) {
+  const v = getField(row, [
+    "Advance Payment UPI/Trans. ID", "Advance Payment UPI/Trans.ID",
+    "Advance UPI/Trans. ID", "UPI/Trans. ID", "UPI/Trans.ID",
+    "UPI / Trans. ID", "UPI Trans ID", "UPI_Trans_ID", "Advance Txn"
+  ]);
+  return plainIdString(v) || "—";
+}
+
+function getBalanceTxnId(row) {
+  const v = getField(row, [
+    "Final Payment UPI/Trans.id", "Final Payment UPI/Trans. id",
+    "Final Payment UPI/Trans.ID", "Balance Trans.id", "Trans.id",
+    "Trans. Id", "Trans.ID", "Trans. ID", "Trans Id", "Trans ID",
+    "trans_id", "Balance Txn"
+  ]);
+  return plainIdString(v) || "—";
+}
+
+function getTxnId(row) {
+  const adv = getAdvanceTxnId(row);
+  return adv !== "—" ? adv : getBalanceTxnId(row);
+}
+
+// ── CREDIT GATING ─────────────────────────────────────────────
+function getAdvanceCredit(row) {
+  if (row.__advDateOk === false) return 0; // excluded by date filter
+  return getAdvanceTxnId(row) !== "—" ? getAdvanceAmount(row) : 0;
+}
+function getBalanceCredit(row) {
+  if (row.__balDateOk === false) return 0; // excluded by date filter
+  return getBalanceTxnId(row) !== "—" ? getBalanceAmount(row) : 0;
+}
+
+function getPayDate(row) {
+  return getField(row, [
+    "Date of Advance Payment", "Date of Final Payment", "Date of Payment",
+    "date_of_payment", "Advance Date", "advance_date", "Balance Date"
+  ]);
+}
+
+function getAdvancePayDate(row) {
+  return getField(row, [
+    "Date of Advance Payment", "Advance Date", "advance_date",
+    "Date of Payment", "date_of_payment", "Check-In"
+  ]);
+}
+
+function getBalancePayDate(row) {
+  return getField(row, [
+    "Date of Final Payment", "Balance Date", "balance_date",
+    "Date of Payment", "date_of_payment", "Check-In"
+  ]);
+}
+
+// ── DATE PARSE ────────────────────────────────────────────────
+function parseCustomDate(raw) {
+  if (!raw && raw !== 0) return new Date(0);
+
+  if (typeof raw === "number") {
+    const d = XLSX.SSF.parse_date_code(raw);
+    return d ? new Date(d.y, d.m - 1, d.d) : new Date(0);
+  }
+
+  let s = String(raw).trim().split(/[\sT]/)[0]; // strip time part
+
+  let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+
+  const dt = new Date(s);
+  return isNaN(dt) ? new Date(0) : dt;
+}
+
+function formatDate(raw) {
+  if (!raw) return "—";
+  const d = parseCustomDate(raw);
+  if (!d || d.getTime() === 0) return "—";
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+}
+
+function dayOnly(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+// ── FILE UPLOAD ───────────────────────────────────────────────
+document.getElementById("excelFile").addEventListener("change", function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  document.getElementById("fileNameLbl").textContent = file.name;
+
+  const now = new Date();
+  const uploadTime =
+    now.toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" }) +
+    " at " +
+    now.toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:true });
+
+  document.getElementById("uploadInfoBox").innerHTML =
+    `<strong>📄 ${file.name}</strong>Uploaded: ${uploadTime}`;
+
+  const ext = file.name.split(".").pop().toLowerCase();
+
+  if (ext === "csv") {
+    const reader = new FileReader();
+    reader.onload = evt => {
+      const parsed = Papa.parse(evt.target.result, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: h => h.trim().replace(/^\uFEFF/, "")
+      });
+      loadData(parsed.data, file.name);
+    };
+    reader.readAsText(file, "UTF-8");
+  } else {
+    const reader = new FileReader();
+    reader.onload = evt => {
+      const wb = XLSX.read(new Uint8Array(evt.target.result), { type:"array", cellDates:false });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      loadData(XLSX.utils.sheet_to_json(ws, { raw:true, defval:"" }), file.name);
+    };
+    reader.readAsArrayBuffer(file);
+  }
+});
+
+function loadData(rows, filename) {
+  originalData = rows;
+  sortDataByDate(originalData);
+  updateStats(originalData);
+  displayTable(originalData);
+  checkNoData(originalData, filename);
+  showToast(`✅ Loaded ${rows.length} record(s) from "${filename}"`);
+}
+
+function checkNoData(rows, filename) {
+  const note = document.getElementById("parseNote");
+  const anyCredit = rows.some(r => getAdvanceCredit(r) > 0 || getBalanceCredit(r) > 0);
+  if (rows.length > 0 && !anyCredit) {
+    note.style.display = "block";
+    note.innerHTML =
+      `<b>⚠ Note:</b> ${rows.length} row(s) loaded from "<b>${filename}</b>" but no confirmed payments were found. ` +
+      `A payment only counts once its UPI/Trans. ID is filled in — check that "Advance Payment Amount"/"Balance Amount" ` +
+      `have numeric values AND their matching UPI/Trans. ID columns are filled in.`;
+  } else {
+    note.style.display = "none";
+  }
+}
+
+// ── DISPLAY TABLE ─────────────────────────────────────────────
+function displayTable(data) {
+  currentDisplayData = [...data];
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+
+  let txList = [];
+  data.forEach(row => {
+    const advAmt = getAdvanceCredit(row);
+    const balAmt = getBalanceCredit(row);
+    const base = {
+      appRef:    getAppRef(row),
+      serviceNo: getServiceNo(row),
+      idCardNo:  getIdCardNo(row),
+      name:      getName(row),
+    };
+    if (advAmt > 0) txList.push({ ...base, amount: advAmt, type: "advance", date: getAdvancePayDate(row), txnId: getAdvanceTxnId(row) });
+    if (balAmt > 0) txList.push({ ...base, amount: balAmt, type: "balance", date: getBalancePayDate(row), txnId: getBalanceTxnId(row) });
+  });
+
+  txList.sort((a, b) => parseCustomDate(a.date) - parseCustomDate(b.date));
+
+  if (txList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" style="padding:50px;color:#94a3b8;font-size:14px;">
+      No confirmed payment records found (a payment needs its UPI/Trans. ID filled in to be counted).</td></tr>`;
+    return;
+  }
+
+  let running = 0;
+  let slno    = 1;
+
+  txList.forEach(t => {
+    running += t.amount;
+    const badgeCls = t.type === "advance" ? "adv-badge" : "bal-badge";
+    const badgeTxt = t.type === "advance" ? "ADVANCE CREDIT" : "BALANCE CREDIT";
+    const remarks  = t.type === "advance" ? "Advance Payment Received" : "Balance Payment Received";
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${slno++}</td>
+        <td>${formatDate(t.date)}</td>
+        <td><strong>${t.appRef}</strong></td>
+        <td><strong>${t.serviceNo}</strong></td>
+        <td>${t.idCardNo}</td>
+        <td>${t.name}</td>
+        <td><span class="${badgeCls}">${badgeTxt}</span></td>
+        <td><code style="font-size:12px;">${t.txnId}</code></td>
+        <td class="credit">₹ ${t.amount.toLocaleString("en-IN",{minimumFractionDigits:2})}</td>
+        <td><span class="run-bal">₹ ${running.toLocaleString("en-IN",{minimumFractionDigits:2})}</span></td>
+        <td>${remarks}</td>
+      </tr>`;
+  });
+
+  tbody.innerHTML += `
+    <tr class="total-row">
+      <td colspan="9" style="text-align:right;padding-right:20px;letter-spacing:.5px;">
+        FINAL ACCOUNT BALANCE
+      </td>
+      <td colspan="2">
+        ₹ ${running.toLocaleString("en-IN",{minimumFractionDigits:2})}
+      </td>
+    </tr>`;
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+function updateStats(data) {
+  let totalAdv = 0, totalBal = 0;
+  data.forEach(r => {
+    totalAdv += getAdvanceCredit(r);
+    totalBal += getBalanceCredit(r);
+  });
+  const fmt = n => n.toLocaleString("en-IN", {minimumFractionDigits:0});
+  document.getElementById("sTotalAdv").textContent = fmt(totalAdv);
+  document.getElementById("sTotalBal").textContent = fmt(totalBal);
+  document.getElementById("sGrand").textContent    = fmt(totalAdv + totalBal);
+  document.getElementById("statsRow").style.display = "";
+}
+
+// ── SEARCH ────────────────────────────────────────────────────
+function searchTable() {
+  const q = document.getElementById("searchInput").value.toLowerCase().trim();
+  if (!q) { displayTable(originalData); updateStats(originalData); return; }
+  const filtered = originalData.filter(r => JSON.stringify(r).toLowerCase().includes(q));
+  updateStats(filtered);
+  displayTable(filtered);
+}
+
+// ── FILTER BY DATE RANGE (calendar pickers) ───────────────────
+function filterDateRange() {
+  const startVal = document.getElementById("startDate").value;
+  const endVal   = document.getElementById("endDate").value;
+
+  if (!startVal && !endVal) { showToast("⚠ Please pick a start and/or end date."); return; }
+
+  const startDt = startVal ? dayOnly(new Date(startVal + "T00:00:00")) : null;
+  const endDt   = endVal   ? dayOnly(new Date(endVal   + "T00:00:00")) : null;
+
+  if (startDt && endDt && endDt < startDt) {
+    showToast("⚠ End date must be on or after the start date.");
+    return;
+  }
+
+  const matchesSelection = (dateVal) => {
+    if (!dateVal) return false;
+    const d = parseCustomDate(dateVal);
+    if (d.getTime() === 0) return false;
+    const day = dayOnly(d);
+    if (startDt && day < startDt) return false;
+    if (endDt && day > endDt) return false;
+    return true;
+  };
+
+  const filtered = [];
+
+  originalData.forEach(row => {
+    const tempRow = { ...row };
+
+    const advMatch = matchesSelection(getAdvancePayDate(row));
+    const balMatch = matchesSelection(getBalancePayDate(row));
+
+    tempRow.__advDateOk = advMatch;
+    tempRow.__balDateOk = balMatch;
+
+    if (getAdvanceCredit(tempRow) > 0 || getBalanceCredit(tempRow) > 0) {
+      filtered.push(tempRow);
+    }
+  });
+
+  sortDataByDate(filtered);
+  updateStats(filtered);
+  displayTable(filtered);
+  showToast(`📅 Showing ${filtered.length} record(s)`);
+}
+
+// ── SHOW ALL ──────────────────────────────────────────────────
+function showAll() {
+  document.getElementById("searchInput").value = "";
+  document.getElementById("startDate").value   = "";
+  document.getElementById("endDate").value     = "";
+  sortDataByDate(originalData);
+  updateStats(originalData);
+  displayTable(originalData);
+}
+
+// ── SORT DATE ─────────────────────────────────────────────────
+function sortDataByDate(data) {
+  data.sort((a, b) => parseCustomDate(getPayDate(a)) - parseCustomDate(getPayDate(b)));
+}
+
+// ── TABLE COLUMN SORT ─────────────────────────────────────────
+function tableSort(field) {
+  if (sortField === field) sortOrder = sortOrder === "asc" ? "desc" : "asc";
+  else { sortField = field; sortOrder = "asc"; }
+
+  const sorted = [...currentDisplayData].sort((a, b) => {
+    let va, vb;
+    if      (field === "date")      { va = parseCustomDate(getPayDate(a)); vb = parseCustomDate(getPayDate(b)); }
+    else if (field === "appref")    { va = getAppRef(a);    vb = getAppRef(b); }
+    else if (field === "serviceno") { va = getServiceNo(a); vb = getServiceNo(b); }
+    else if (field === "idcard")    { va = getIdCardNo(a);  vb = getIdCardNo(b); }
+    else if (field === "name")      { va = getName(a);      vb = getName(b); }
+    else if (field === "txn")       { va = getTxnId(a);     vb = getTxnId(b); }
+    else if (field === "credit")    { va = getAdvanceCredit(a) || getBalanceCredit(a); vb = getAdvanceCredit(b) || getBalanceCredit(b); }
+    else                            { va = JSON.stringify(a); vb = JSON.stringify(b); }
+
+    if (typeof va === "number" || va instanceof Date) {
+      return sortOrder === "asc" ? va - vb : vb - va;
+    }
+    return sortOrder === "asc"
+      ? String(va).localeCompare(String(vb))
+      : String(vb).localeCompare(String(va));
+  });
+
+  displayTable(sorted);
+}
+
+// ── EXPORT PDF ────────────────────────────────────────────────
+// FIX: jsPDF's built-in Helvetica font has no glyph for "₹", so it was
+// rendering as a broken superscript "1" in the exported PDF. The
+// on-screen amounts also carry ".00"/".0" decimals that aren't wanted
+// in the printed statement. Both are cleaned up here, for the PDF only
+// — the live HTML table (and its ₹ symbols/decimals) is untouched.
+function exportPDF() {
+  const rows = document.querySelectorAll("#paymentTable tbody tr");
+  if (!rows.length) { showToast("⚠ No data to export."); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF("l", "mm", "a4");
+
+  // Title bar
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, 300, 22, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(15);
+  doc.setFont("helvetica", "bold");
+  doc.text("Jawan Bhavan Rental Collection Statement", 148, 14, { align:"center" });
+
+  // Sub-line
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(80, 80, 80);
+  const now = new Date();
+  doc.text(
+    `Generated: ${now.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"})} at ${now.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",hour12:true})}`,
+    14, 30
+  );
+
+  doc.autoTable({
+    html: "#paymentTable",
+    startY: 36,
+    theme: "grid",
+    styles: { fontSize: 7, cellPadding: 3, halign:"center", overflow:"linebreak" },
+    headStyles: { fillColor:[30,41,59], textColor:[255,255,255], fontStyle:"bold" },
+    alternateRowStyles: { fillColor:[248,250,252] },
+    didParseCell(data) {
+      if (data.row.raw?.classList?.contains("total-row")) {
+        data.cell.styles.fillColor = [15, 23, 42];
+        data.cell.styles.textColor = [255, 255, 255];
+        data.cell.styles.fontStyle = "bold";
+      }
+
+      // Credit is column index 8, Running Balance is column index 9.
+      // On the total row, "FINAL ACCOUNT BALANCE" spans two columns
+      // (colspan=2) but its starting index is still 9, so this also
+      // catches that merged cell.
+      if (data.column.index === 8 || data.column.index === 9) {
+        data.cell.text = data.cell.text.map(line =>
+          line
+            .replace(/₹/g, "Rs.")        // swap unsupported glyph
+            .replace(/(\d)\.\d+/g, "$1") // drop trailing .00 / .0
+        );
+      }
+    },
+  });
+
+  doc.save("Jawan_Bhavan_Rental_Statement.pdf");
+  showToast("✅ PDF exported!");
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(t._t);
+  t._t = setTimeout(() => { t.style.display = "none"; }, 3500);
+}
+</script>
+</body>
+</html>

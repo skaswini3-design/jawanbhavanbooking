@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jawan Bhavan — Administration Portal</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ 
+    --ink:#0f1b2e;
+    --navy:#12213f;
+    --navy-2:#1c3a63;
+    --gold:#b3891c;
+    --gold-deep:#8a6c14;
+    --gold-soft:#c9a227;
+    --paper:#ffffff;
+    --parchment:#faf8f3;
+    --slate:#6b7690;
+    --line:#e7e2d4;
+    --hairline:rgba(179,137,28,.28);
+  }
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Poppins',sans-serif;
+    background:
+      radial-gradient(1200px 500px at 12% -10%, #fbf6e9 0%, transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, #f4f2ea 0%, transparent 55%),
+      var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    padding:0 0 70px;
+  }
+  @media (prefers-reduced-motion: reduce){ *{animation-duration:.001ms !important; transition-duration:.001ms !important;} }
+
+  /* ── LETTERHEAD ── */
+  .letterhead{
+    max-width:1180px;
+    margin:0 auto;
+    padding:52px 28px 40px;
+    text-align:center;
+    position:relative;
+  }
+  .emblem{
+    width:64px;height:64px;
+    margin:0 auto 22px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--gold-soft), var(--gold) 55%, var(--gold-deep) 100%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 1px rgba(179,137,28,.35), 0 8px 26px rgba(179,137,28,.22);
+    animation:emblem-in .7s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .emblem i{ color:#2a2005; font-size:22px; }
+  @keyframes emblem-in{ from{opacity:0; transform:translateY(-10px) scale(.85);} to{opacity:1; transform:none;} }
+
+  .eyebrow{
+    font-size:11.5px;
+    letter-spacing:.32em;
+    text-transform:uppercase;
+    color:var(--gold);
+    font-weight:600;
+    margin-bottom:10px;
+  }
+  h1.title{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:700;
+    font-size:clamp(38px,6vw,58px);
+    letter-spacing:.01em;
+    color:var(--navy);
+    line-height:1.05;
+  }
+  .subtitle{
+    margin-top:12px;
+    font-size:14px;
+    color:var(--slate);
+    letter-spacing:.02em;
+  }
+  .rule{
+    width:120px; height:1px;
+    margin:26px auto 0;
+    background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  /* ── REGISTER BOARD ── */
+  .board{
+    max-width:1180px;
+    margin:0 auto;
+    padding:14px 28px 0;
+  }
+  .board-label{
+    text-align:center;
+    font-size:11px;
+    letter-spacing:.28em;
+    text-transform:uppercase;
+    color:var(--slate);
+    margin-bottom:28px;
+  }
+
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:22px;
+  }
+  @media (max-width:920px){ .cards{ grid-template-columns:1fr; } }
+
+  .duty-card{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    text-decoration:none;
+    color:inherit;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:30px 26px 26px;
+    min-height:280px;
+    overflow:hidden;
+    box-shadow:0 2px 10px rgba(15,27,46,.05);
+    transition:transform .32s cubic-bezier(.2,.8,.2,1), border-color .32s, box-shadow .32s;
+    opacity:0; transform:translateY(14px);
+    animation:card-in .6s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  .duty-card:nth-child(1){ animation-delay:.08s; }
+  .duty-card:nth-child(2){ animation-delay:.18s; }
+  .duty-card:nth-child(3){ animation-delay:.28s; }
+  @keyframes card-in{ to{ opacity:1; transform:none; } }
+
+  .duty-card::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(135deg, rgba(15,27,46,.015) 0 2px, transparent 2px 26px);
+    pointer-events:none;
+  }
+  .duty-card::after{
+    content:"";
+    position:absolute; left:0; right:0; top:0; height:3px;
+    background:linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity:0;
+    transition:opacity .32s;
+  }
+  .duty-card:hover{
+    transform:translateY(-6px);
+    border-color:var(--gold);
+    box-shadow:0 20px 40px rgba(15,27,46,.12), 0 0 0 1px rgba(179,137,28,.25) inset;
+  }
+  .duty-card:hover::after{ opacity:1; }
+  .duty-card:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:4px;
+  }
+
+  .card-file-no{
+    font-family:'Cormorant Garamond', serif;
+    font-size:12.5px;
+    letter-spacing:.18em;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin-bottom:18px;
+  }
+
+  .card-icon{
+    width:46px; height:46px;
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(179,137,28,.08);
+    border:1px solid var(--hairline);
+    margin-bottom:20px;
+    font-size:19px;
+    color:var(--gold-deep);
+  }
+
+  .duty-card h2{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:700;
+    font-size:25px;
+    color:var(--navy);
+    margin-bottom:10px;
+    line-height:1.2;
+  }
+  .duty-card p.desc{
+    font-size:12.5px;
+    color:var(--slate);
+    line-height:1.65;
+    flex:1;
+  }
+
+  .card-foot{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:22px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+  .card-cta{
+    font-size:11.5px;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--gold-deep);
+    display:flex;align-items:center;gap:8px;
+  }
+  .card-cta i{ transition:transform .25s; font-size:11px; }
+  .duty-card:hover .card-cta i{ transform:translateX(4px); }
+
+  .card-status{
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:#15803d;
+    display:flex;align-items:center;gap:6px;
+  }
+  .card-status::before{
+    content:"";
+    width:6px;height:6px;border-radius:50%;
+    background:#22c55e;
+    box-shadow:0 0 0 3px rgba(34,197,94,.16);
+  }
+
+  /* ── FOOTER ── */
+  .portal-footer{
+    max-width:1180px;
+    margin:52px auto 0;
+    padding:20px 28px 0;
+    text-align:center;
+    border-top:1px solid var(--line);
+    color:var(--slate);
+    font-size:11.5px;
+    letter-spacing:.05em;
+  }
+  .portal-footer strong{ color:var(--navy); font-weight:600; }
+</style>
+</head>
+<body>
+
+  <header class="letterhead">
+    <div class="emblem"><i class="fa-solid fa-star"></i></div>
+    <div class="eyebrow">Department of Sainik Welfare · Puducherry</div>
+    <h1 class="title">Jawan Bhavan</h1>
+    <p class="subtitle">Administration Portal — Bookings, Room Status &amp; Payment Records</p>
+    <div class="rule"></div>
+  </header>
+
+  <main class="board">
+   
+
+    <div class="cards">
+
+      <a class="duty-card" href="../bookingreports/booking.html">
+        <div class="card-file-no">Jawan Bhavan Booking Reports</div>
+        <div class="card-icon"><i class="fa-solid fa-book-open"></i></div>
+        <h2>Booking Details</h2>
+        <p class="desc">Upload the guest booking sheet to browse every reservation — service status, check-in / check-out, guest details and room allotment — with search, filters and export.</p>
+        <div class="card-foot">
+          <span class="card-status">Ready</span>
+          <span class="card-cta">Open <i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </a>
+
+      <a class="duty-card" href="../roomavailability/availability.html">
+        <div class="card-file-no">Room Availability Checking</div>
+        <div class="card-icon"><i class="fa-solid fa-calendar-days"></i></div>
+        <h2>Room Availability</h2>
+        <p class="desc">A day-by-day board of every room — Suite and Family — showing who's occupying, who's checking out, and what's free, for today or any date range.</p>
+        <div class="card-foot">
+          <span class="card-status">Ready</span>
+          <span class="card-cta">Open <i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </a>
+
+      <a class="duty-card" href="../bankcollectionreports/bankcoll.html">
+        <div class="card-file-no">Bank Collection Reports</div>
+        <div class="card-icon"><i class="fa-solid fa-receipt"></i></div>
+        <h2>Rental Collection Statement</h2>
+        <p class="desc">A running bank-style ledger of confirmed advance and balance payments, with running balance, date filtering and a printable PDF statement.</p>
+        <div class="card-foot">
+          <span class="card-status">Ready</span>
+          <span class="card-cta">Open <i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+      </a>
+
+    </div>
+  </main>
+
+  <footer class="portal-footer">
+    <p><strong>Jawan Bhavan</strong> · Current Account · Puducherry Branch — managed by the Department of Sainik Welfare</p>
+  </footer>
+
+</body>
+</html>
